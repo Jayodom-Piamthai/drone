@@ -7,7 +7,7 @@ int xValue = 0;  // To store value of the X axis
 int yValue = 0;  // To store value of the Y axis
 int xValue2 = 0;
 int yValue2 = 0;
-int deadZone = 60; // set according to joystick drift
+int deadZone = 60;  // set according to joystick drift
 //LoRa setup
 #include <SPI.h>
 #include <LoRa.h>
@@ -90,18 +90,18 @@ void loop() {
   Serial.println(yValue2);
   delay(1);
 
-  if (millis() < interval && !kickback) {
+  if (millis() < interval && !kickback) {  //normally sends joy data
     sendData();
     Serial.println(count);
     Serial.println("sending");
-  } else if (kickback) {
-    if (millis() < interval) {
+  } else if (kickback) { // waiting for data when in kickback
+    if (millis() < interval) {//enter 3 second period to catch data
       int packetSize = LoRa.parsePacket();
-      if (packetSize) {
+      if (packetSize) {//if caught get out of kickback,set interval and var
         Serial.println("package recieved");
         count += 1;
         kickback = 0;
-        interval = millis() + 5000;
+        interval = millis() + 5000; // catch again in 5 sec
         String rawInput;
         while (LoRa.available()) {
           rawInput += ((char)LoRa.read());  //recieve message as ascii char and put into string
@@ -123,12 +123,12 @@ void loop() {
         Serial.print(", mpuz = ");
         Serial.println(mpuz);
       }
-    } else {
+    } else {//cant catch in timeframe,get out of kickback and continue sending
       kickback = 0;
       interval = millis() + 5000;
       Serial.println("kickback failed,proceed");
     }
-  } else {
+  } else { //interval reached,entering kickback and sending signal to request data back from drone
     kickback = 1;
     kickround = 0;
     Serial.println("kicking");
@@ -136,7 +136,7 @@ void loop() {
       sendData();
       kickround += 1;
     }
-    interval = millis() + 5000;
+    interval = millis() + 3000;
   }
 }
 

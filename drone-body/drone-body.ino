@@ -2,20 +2,20 @@
 #include "I2Cdev.h"
 #include "MPU6050_6Axis_MotionApps20.h"
 #include "Wire.h"
-#define OUTPUT_READABLE_YAWPITCHROLL //for teapot visualization
+#define OUTPUT_READABLE_YAWPITCHROLL  //for teapot visualization
 MPU6050 mpu;
 int16_t ax, ay, az;
 int16_t gx, gy, gz;
-int valx , valy , valz;
+int valx, valy, valz;
 char rd;
 int prevVal;
-int ledR = 3 ;
-int ledG = 4 ;
-int ledY = 5 ;
-int pin11 = 11 , pin10 = 10 ;
-int val1 , val2 ;
-int valgy1 = 0 , valgy2 = 0;
-int margin = 30; // set margin for mpu to joy control
+int ledR = 3;
+int ledG = 4;
+int ledY = 5;
+int pin11 = 11, pin10 = 10;
+int val1, val2;
+int valgy1 = 0, valgy2 = 0;
+int margin = 30;  // set margin for mpu to joy control
 
 //dht22
 int temp;
@@ -23,13 +23,13 @@ int humid;
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 #include <DHT_U.h>
-#define DHTTYPE    DHT22
+#define DHTTYPE DHT22
 #define DHTPIN 3
 DHT_Unified dht(DHTPIN, DHTTYPE);
 
 //drone motor
 #include <Servo.h>
-Servo ESC1;     // create servo object to control the ESC
+Servo ESC1;  // create servo object to control the ESC
 Servo ESC2;
 Servo ESC3;
 Servo ESC4;
@@ -47,33 +47,32 @@ int kickround = 0;
 
 //drone control
 #define payloadPin 2
-int xValue ;
-int yValue ;
-int xValue2 ;
-int yValue2 ;
+int xValue;
+int yValue;
+int xValue2;
+int yValue2;
 bool recieved;
 long lastPack;
 int payload;
-long floatTime = 120000;//emergency floatdown time
+long floatTime = 120000;  //emergency floatdown time
 
 
-void setup()
-{
+void setup() {
   millis();
   Serial.begin(38400);
 
   //MPU
-  pinMode(ledR, OUTPUT) ;
-  pinMode(ledG, OUTPUT) ;
-  pinMode(ledY, OUTPUT) ;
+  pinMode(ledR, OUTPUT);
+  pinMode(ledG, OUTPUT);
+  pinMode(ledY, OUTPUT);
   Wire.begin();
   Serial.println("Initialize MPU");
   mpu.initialize();
-  Serial.println(mpu.testConnection() ? "Connected" : "Connection failed");
+  Serial.println(mpu.testConnection() ? "MPU Connected" : "MPU Connection failed");
 
   //drone motor
   // Attach the ESC on pin 9
-  ESC1.attach(5, 1000, 2000); // (pin, min pulse width, max pulse width in microseconds)
+  ESC1.attach(5, 1000, 2000);  // (pin, min pulse width, max pulse width in microseconds)
   ESC2.attach(6, 1000, 2000);
   ESC3.attach(7, 1000, 2000);
   ESC4.attach(8, 1000, 2000);
@@ -85,35 +84,36 @@ void setup()
   //LoRa
 
   LoRa.setPins(ss, rst, dio0);
-  while (!Serial);
+  while (!Serial)
+    ;
   if (!LoRa.begin(433E6)) {
     Serial.println("Starting LoRa failed!");
-    while (1);
+    while (1)
+      ;
   }
   Serial.println("LoRa Receiver Started");
 }
 
-void loop()
-{
+void loop() {
   //MPU
   mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
-  valx = map(ax, -17000, 17000, 0, 1023); //left and right tilting,left goes toward 1023 and right goes toward 0,idealy remains at 512 flat
-  valy = map(ay, -17000, 17000, 0, 1023); //forward and backward tilting, goes toward 1023 and right goes toward ,idealy remains at 512 flat
-  valz = map(az, -17000, 17000, 0, 1023); //parallel to the ground,ard faces upward toward the sky perfectly parallel at 1023 and lower to 0 as the top face toward the ground
-//  for visualization/
-  Serial.print(valx) ;
-  Serial.print("/") ;
-  Serial.print(valy) ;
-  Serial.print("/") ;
-  Serial.print(valz) ;
-  Serial.println("/") ;
+  valx = map(ax, -17000, 17000, 0, 1023);  //left and right tilting,left goes toward 1023 and right goes toward 0,idealy remains at 512 flat
+  valy = map(ay, -17000, 17000, 0, 1023);  //forward and backward tilting, goes toward 1023 and right goes toward ,idealy remains at 512 flat
+  valz = map(az, -17000, 17000, 0, 1023);  //parallel to the ground,ard faces upward toward the sky perfectly parallel at 1023 and lower to 0 as the top face toward the ground
+                                           //  for visualization/
+  Serial.print(valx);
+  Serial.print("/");
+  Serial.print(valy);
+  Serial.print("/");
+  Serial.print(valz);
+  Serial.println("/");
 
   //dht22
-  if ((millis() % 5000 ) == 0) {
+  if ((millis() % 5000) == 0) {
     Serial.println("getting dht data");
     sensors_event_t event;
     dht.temperature().getEvent(&event);
-    temp = event.temperature ;
+    temp = event.temperature;
     dht.humidity().getEvent(&event);
     humid = event.relative_humidity;
     Serial.println(kickback);
@@ -130,10 +130,10 @@ void loop()
       lastPack = millis();
       String rawInput;
       while (LoRa.available()) {
-        rawInput += ((char)LoRa.read());//recieve message as ascii char and put into string
+        rawInput += ((char)LoRa.read());  //recieve message as ascii char and put into string
       }
       Serial.print(rawInput);
-      xValue = rawInput.substring(0, rawInput.indexOf(",")).toInt() ;
+      xValue = rawInput.substring(0, rawInput.indexOf(",")).toInt();
       yValue = rawInput.substring(rawInput.indexOf(",") + 1, rawInput.indexOf("<")).toInt();
       xValue2 = rawInput.substring(rawInput.indexOf("<") + 1, rawInput.indexOf(".")).toInt();
       yValue2 = rawInput.substring(rawInput.indexOf(".") + 1, rawInput.indexOf(">")).toInt();
@@ -152,8 +152,7 @@ void loop()
       Serial.print(", kickback = ");
       Serial.println(kickback);
     }
-  }
-  else {
+  } else {
     kickback = 0;
     kickround = 0;
     interval = millis() + 500;
@@ -174,23 +173,21 @@ void loop()
 
   if (!recieved) {
     if (millis() - lastPack > 1300) {
-      if (yValue > 100) { // emergency landing protocol
+      if (yValue > 100) {  // emergency landing protocol
         interval = millis() + floatTime;
         if (millis())
-          ESC1.write(444); //top left -aclk
-        ESC2.write(444); //top right - clk
-        ESC3.write(444); //bottom left -aclk
-        ESC4.write(444); //bottom left - clk
-      }
-      else  { // landing protocol
-        ESC1.write(0); //top left -aclk
-        ESC2.write(0); //top right - clk
-        ESC3.write(0); //bottom left -aclk
-        ESC4.write(0); //bottom left - clk
+          ESC1.write(444);  //top left -aclk
+        ESC2.write(444);    //top right - clk
+        ESC3.write(444);    //bottom left -aclk
+        ESC4.write(444);    //bottom left - clk
+      } else {              // landing protocol
+        ESC1.write(0);      //top left -aclk
+        ESC2.write(0);      //top right - clk
+        ESC3.write(0);      //bottom left -aclk
+        ESC4.write(0);      //bottom left - clk
       }
     }
-  }
-  else  {
+  } else {
 
     //Joy1:thrust Y and turn X | Joy2:roll X and pitch Y
     // Send the signal to the ESC
@@ -200,10 +197,10 @@ void loop()
     //xValue for turning the head of drone left or right - clk/aclk
     //yValue2 for forwarding and backwarding -top bottom
     //xValue2 for left and right rolling -left right
-    ESC1.write(yValue); //top left -aclk
-    ESC2.write(yValue); //top right - clk
-    ESC3.write(yValue); //bottom left -aclk
-    ESC4.write(yValue); //bottom left - clk
+    ESC1.write(yValue);  //top left -aclk
+    ESC2.write(yValue);  //top right - clk
+    ESC3.write(yValue);  //bottom left -aclk
+    ESC4.write(yValue);  //bottom left - clk
     //    ESC1.write(yValue - ((xValue - 512) / 4) - (yValue2 - 512 / 4) - ((512 - xValue2) / 4)); //top left -aclk
     //    ESC2.write(yValue - ((512 - xValue) / 4) - (512 - yValue2 / 4) - ((xValue2 - 512) / 4)); //top right - clk
     //    ESC3.write(yValue - ((xValue - 512) / 4) - (yValue2 - 512 / 4) - ((512 - xValue2) / 4)); //bottom left -aclk
