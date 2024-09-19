@@ -1,6 +1,6 @@
 //joystick setup
-#define VRX_PIN 25  // Arduino pin connected to VRX pin
-#define VRY_PIN 26  // Arduino pin connected to VRY pin
+#define VRX_PIN 25   // Arduino pin connected to VRX pin
+#define VRY_PIN 26   // Arduino pin connected to VRY pin
 #define VRX_PIN2 32  // Arduino pin connected to VRX pin
 #define VRY_PIN2 33  // Arduino pin connected to VRY pin
 int xValue;
@@ -36,14 +36,14 @@ void loop() {
   //   yValue2 = 512;
   // }
 
-  // Serial.print("x = ");
-  // Serial.print(xValue);
-  // Serial.print(", y = ");
-  // Serial.println(yValue);
-   Serial.print(", x2 = ");
-   Serial.print(xValue2);
-   Serial.print(", y2 = ");
-   Serial.println(yValue2);
+  Serial.print("x = ");
+  Serial.print(xValue);
+  Serial.print(", y = ");
+  Serial.print(yValue);
+  Serial.print(", x2 = ");
+  Serial.print(xValue2);
+  Serial.print(", y2 = ");
+  Serial.println(yValue2);
 
   delay(10);
 }

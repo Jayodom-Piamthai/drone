@@ -29,6 +29,7 @@ DHT_Unified dht(DHTPIN, DHTTYPE);
 
 //drone motor
 #include <Servo.h>
+Servo myservo;
 Servo ESC1;  // create servo object to control the ESC
 Servo ESC2;
 Servo ESC3;
@@ -51,6 +52,11 @@ int xValue;
 int yValue;
 int xValue2;
 int yValue2;
+float multTL = 1;   //top left -aclk
+float multTR = 1;   //top right - clk
+float multBL = 1;   //bottom left -aclk
+float multBR = 1;   //bottom left - clk
+float multTrn = 1;  //mult for turning left/right
 bool recieved;
 long lastPack;
 int payload;
@@ -72,6 +78,8 @@ void setup() {
 
   //drone motor
   // Attach the ESC on pin 9
+  myservo.attach(4);
+  myservo.write(0);
   ESC1.attach(5, 1000, 2000);  // (pin, min pulse width, max pulse width in microseconds)
   ESC2.attach(6, 1000, 2000);
   ESC3.attach(7, 1000, 2000);
@@ -97,19 +105,19 @@ void setup() {
 void loop() {
   //MPU
   mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
-  valx = map(ax, -17000, 17000, 0, 1023);  //left and right tilting,left goes toward 1023 and right goes toward 0,idealy remains at 512 flat
-  valy = map(ay, -17000, 17000, 0, 1023);  //forward and backward tilting, goes toward 1023 and right goes toward ,idealy remains at 512 flat
-  valz = map(az, -17000, 17000, 0, 1023);  //parallel to the ground,ard faces upward toward the sky perfectly parallel at 1023 and lower to 0 as the top face toward the ground
-                                           //  for visualization/
-  Serial.print(valx);
-  Serial.print("/");
-  Serial.print(valy);
-  Serial.print("/");
-  Serial.print(valz);
-  Serial.println("/");
+  valx = map(ax, -17000, 17000, 0, 180);  //left and right tilting,left goes toward 180 and right goes toward 0,idealy remains at 90 flat
+  valy = map(ay, -17000, 17000, 0, 180);  //forward and backward tilting, goes toward 180 and right goes toward ,idealy remains at 90 flat
+  valz = map(az, -17000, 17000, 0, 180);  //parallel to the ground,ard faces upward toward the sky perfectly parallel at 180 and lower to 0 as the top face toward the ground
+  //  for visualization/
+  // Serial.print(valx);
+  // Serial.print("/");
+  // Serial.print(valy);
+  // Serial.print("/");
+  // Serial.print(valz);
+  // Serial.println("/");
 
   //dht22
-  if ((millis() % 5000) == 0) {
+  if ((millis() % 5000) == 0) {  //read every 5 seconds
     Serial.println("getting dht data");
     sensors_event_t event;
     dht.temperature().getEvent(&event);
@@ -162,6 +170,86 @@ void loop() {
   }
 
   //drone motor
+  //Joy1:thrust Y and turn X | Joy2:roll X and pitch Y
+  // Send the signal to the ESC
+  //x goes 0-4095 from left to right offset 25 up(~485)
+  //y goes 0-4095 from top to bottom (bot-top with mapping)offset 20 down (~537)
+  //yValue for drone thrust
+  //xValue for turning the head of drone left or right - clk/aclk
+  //yValue2 for forwarding and backwarding -top bottom
+  //xValue2 for left and right rolling -left right
+  //MPU
+  //X left and right tilting,left goes toward 180 and right goes toward 0,idealy remains at 90 flat
+  //Y forward and backward tilting,foward goes toward 180 and backward goes toward 0,idealy remains at 90 flat
+  //Z parallel to the ground,ard faces upward toward the sky perfectly parallel at 180 and lower to 0 as the top face toward the ground
+  //multiplier to thrust value based
+  xValue = map(xValue, 0, 1023, 0, 180);    //turn left/right
+  yValue = map(yValue, 0, 1023, 0, 180);    //thrust force
+  xValue2 = map(xValue2, 0, 1023, 0, 180);  //tilt left/right
+  yValue2 = map(yValue2, 0, 1023, 0, 180);  //tilt forward/backward
+  //mpu correction - moving toward the set point
+  if (valx > xValue2) {//left tilt. increase left side,decrease right side. incrementally
+    multTL += 0.05;
+    multTR -= 0.05;
+    multBL += 0.05;
+    multBR -= 0.05;
+  }
+  if (valx < xValue2) {//right tilt. increase right side,decrease left side. incrementally
+    multTL -= 0.05;
+    multTR += 0.05;
+    multBL -= 0.05;
+    multBR += 0.05;
+  }
+  if (valy > yValue2) {//left tilt. increase left side,decrease right side. incrementally
+    multTL += 0.05;
+    multTR += 0.05;
+    multBL -= 0.05;
+    multBR -= 0.05;
+  }
+  if (valy < yValue2) {//left tilt. increase left side,decrease right side. incrementally
+    multTL -= 0.05;
+    multTR -= 0.05;
+    multBL += 0.05;
+    multBR += 0.05;
+  }
+  if(xValue > 90){//turn right
+    multTL += 0.05;
+    multTR -= 0.05;
+    multBL -= 0.05;
+    multBR += 0.05;
+  }
+  else{//turn left
+    multTL -= 0.05;
+    multTR += 0.05;
+    multBL += 0.05;
+    multBR -= 0.05;
+  }
+
+  //hard limit - so drone wont just fell down when mpu goes wrong
+  if(multTL > 0.4){
+    multTL = 0.4;
+  }
+  else if ( multTL < -0.4) {
+    multTL = -0.4;
+  }
+  if(multTR > 0.4){
+    multTR = 0.4;
+  }
+  else if ( multTR < -0.4) {
+    multTR = -0.4;
+  }
+  if(multBL > 0.4){
+    multBL = 0.4;
+  }
+  else if ( multBL < -0.4) {
+    multBL = -0.4;
+  }
+  if(multBR > 0.4){
+    multTl = 0.4;
+  }
+  else if ( multBR < -0.4) {
+    multTL = -0.4;
+  }
   //test pot
   //  potValue = analogRead(A0);   // reads the value of the potentiometer (value between 0 and 1023) for test
   //  potValue = map(potValue, 0, 1023, 0, 180);   // scale it to use it with the servo library (value between 0 and 180)
@@ -173,6 +261,7 @@ void loop() {
 
   if (!recieved) {
     if (millis() - lastPack > 1300) {
+      Serial.println("disconnected");
       if (yValue > 100) {  // emergency landing protocol
         interval = millis() + floatTime;
         if (millis())
@@ -188,19 +277,22 @@ void loop() {
       }
     }
   } else {
-
-    //Joy1:thrust Y and turn X | Joy2:roll X and pitch Y
-    // Send the signal to the ESC
-    //x goes 0-4095 from left to right offset 25 up(~485)
-    //y goes 0-4095 from top to bottom (bot-top with mapping)offset 20 down (~537)
-    //yValue for drone thrust
-    //xValue for turning the head of drone left or right - clk/aclk
-    //yValue2 for forwarding and backwarding -top bottom
-    //xValue2 for left and right rolling -left right
+    Serial.println("controlling drone");
+    //value 1-180
     ESC1.write(yValue);  //top left -aclk
-    ESC2.write(yValue);  //top right - clk
+    ESC2.write(yValue);  //top right - clk 
     ESC3.write(yValue);  //bottom left -aclk
     ESC4.write(yValue);  //bottom left - clk
+    if (payload){
+      myservo.write(50);
+    }
+    else{
+      myservo.write(0);
+    }
+    // ESC1.write(yValue * multTL);  //top left -aclk
+    // ESC2.write(yValue * multTR);  //top right - clk 
+    // ESC3.write(yValue * multBL);  //bottom left -aclk
+    // ESC4.write(yValue * multBR);  //bottom left - clk
     //    ESC1.write(yValue - ((xValue - 512) / 4) - (yValue2 - 512 / 4) - ((512 - xValue2) / 4)); //top left -aclk
     //    ESC2.write(yValue - ((512 - xValue) / 4) - (512 - yValue2 / 4) - ((xValue2 - 512) / 4)); //top right - clk
     //    ESC3.write(yValue - ((xValue - 512) / 4) - (yValue2 - 512 / 4) - ((512 - xValue2) / 4)); //bottom left -aclk

@@ -2,19 +2,22 @@
 #define VRX_PIN 25  // Arduino pin connected to VRX pin
 #define VRY_PIN 26  // Arduino pin connected to VRY pin
 #define VRX2_PIN 32
-#define VRY2_PIN 13
+#define VRY2_PIN 33
 int xValue = 0;  // To store value of the X axis
 int yValue = 0;  // To store value of the Y axis
 int xValue2 = 0;
 int yValue2 = 0;
-int deadZone = 60;  // set according to joystick drift
+int deadZone = 90;  // set according to joystick drift
 //LoRa setup
 #include <SPI.h>
 #include <LoRa.h>
 //this pin for esp32 wroom
 #define ss 5
-#define rst 14
-#define dio0 2
+#define rst 27
+#define dio0 35
+// #define ss 5
+// #define rst 14
+// #define dio0 2
 // LoRa.setPins(ss, rst, dio0);
 int count = 0;
 int interval = 0;
@@ -22,8 +25,10 @@ int kickback;
 int kickround;
 
 //drone data
-#define payloadPin 2
+#define payloadPin 4
+#define hoverPin 2
 int payload;
+int hoverLock;
 int humid;
 int temp;
 int mpux;
@@ -34,6 +39,8 @@ void setup() {
   Serial.begin(38400);
   Serial.println("drone begin");
   millis();
+  pinMode(2,INPUT);
+  pinMode(4,INPUT);
   //LoRa
   LoRa.setPins(ss, rst, dio0);
   while (!Serial)
@@ -79,6 +86,19 @@ void loop() {
   } else {
     payload = 0;
   }
+  if (digitalRead(hoverPin) == true) {
+    if(!hoverLock){
+      if(yValue < 100){
+        yValue = 1; //for lock at near-stop moving so can be safely turn off
+      }
+      hoverLock = yValue;
+    }
+    yValue = hoverLock ;
+  }
+  else{
+    hoverLock = 0;
+  }
+  
   // print data to Serial Monitor on Arduino IDE
   Serial.print("x = ");
   Serial.print(xValue);
@@ -87,21 +107,25 @@ void loop() {
   Serial.print(", x2 = ");
   Serial.print(xValue2);
   Serial.print(", y2 = ");
-  Serial.println(yValue2);
+  Serial.print(yValue2);
+  Serial.print(", hover = ");
+  Serial.print(hoverLock);
+  Serial.print(", payload = ");
+  Serial.println(payload);
   delay(1);
 
   if (millis() < interval && !kickback) {  //normally sends joy data
     sendData();
     Serial.println(count);
     Serial.println("sending");
-  } else if (kickback) { // waiting for data when in kickback
-    if (millis() < interval) {//enter 3 second period to catch data
+  } else if (kickback) {        // waiting for data when in kickback
+    if (millis() < interval) {  //enter 3 second period to catch data
       int packetSize = LoRa.parsePacket();
-      if (packetSize) {//if caught get out of kickback,set interval and var
+      if (packetSize) {  //if caught get out of kickback,set interval and var
         Serial.println("package recieved");
         count += 1;
         kickback = 0;
-        interval = millis() + 5000; // catch again in 5 sec
+        interval = millis() + 5000;  // catch again in 5 sec
         String rawInput;
         while (LoRa.available()) {
           rawInput += ((char)LoRa.read());  //recieve message as ascii char and put into string
@@ -123,12 +147,12 @@ void loop() {
         Serial.print(", mpuz = ");
         Serial.println(mpuz);
       }
-    } else {//cant catch in timeframe,get out of kickback and continue sending
+    } else {  //cant catch in timeframe,get out of kickback and continue sending
       kickback = 0;
       interval = millis() + 5000;
       Serial.println("kickback failed,proceed");
     }
-  } else { //interval reached,entering kickback and sending signal to request data back from drone
+  } else {  //interval reached,entering kickback and sending signal to request data back from drone
     kickback = 1;
     kickround = 0;
     Serial.println("kicking");
