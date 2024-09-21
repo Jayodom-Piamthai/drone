@@ -100,6 +100,10 @@ void setup() {
       ;
   }
   Serial.println("LoRa Receiver Started");
+  ESC1.write(0);  //top left -aclk
+  ESC2.write(0);  //top right - clk
+  ESC3.write(0);  //bottom left -aclk
+  ESC4.write(0);  //bottom left - clk
 }
 
 void loop() {
@@ -187,7 +191,7 @@ void loop() {
   yValue = map(yValue, 0, 1023, 0, 180);    //thrust force
   xValue2 = map(xValue2, 0, 1023, 0, 180);  //tilt left/right
   yValue2 = map(yValue2, 0, 1023, 0, 180);  //tilt forward/backward
-  //mpu correction - moving toward the set point
+  //mpu correction - moving toward the set point once past half speed
   if (valx > xValue2) {  //left tilt. increase left side,decrease right side. incrementally
     multTL += 0.05;
     multTR -= 0.05;
@@ -225,25 +229,25 @@ void loop() {
   }
 
   //hard limit - so drone wont just fell down when mpu goes wrong
-  if (multTL > 0.4) {
-    multTL = 0.4;
-  } else if (multTL < -0.4) {
-    multTL = -0.4;
+  if (multTL > 1.4) {
+    multTL = 1.4;
+  } else if (multTL < -1.4) {
+    multTL = -1.4;
   }
-  if (multTR > 0.4) {
-    multTR = 0.4;
-  } else if (multTR < -0.4) {
-    multTR = -0.4;
+  if (multTR > 1.4) {
+    multTR = 1.4;
+  } else if (multTR < -1.4) {
+    multTR = -1.4;
   }
-  if (multBL > 0.4) {
-    multBL = 0.4;
-  } else if (multBL < -0.4) {
-    multBL = -0.4;
+  if (multBL > 1.4) {
+    multBL = 1.4;
+  } else if (multBL < -1.4) {
+    multBL = -1.4;
   }
-  if (multBR > 0.4) {
-    multTl = 0.4;
-  } else if (multBR < -0.4) {
-    multTL = -0.4;
+  if (multBR > 1.4) {
+    multBR = 1.4;
+  } else if (multBR < -1.4) {
+    multBR = -1.4;
   }
   //test pot
   //  potValue = analogRead(A0);   // reads the value of the potentiometer (value between 0 and 1023) for test
@@ -257,7 +261,7 @@ void loop() {
   if (!recieved) {
     if (millis() - lastPack > 1300) {
       Serial.println("disconnected");
-      if (yValue > 90) {  // emergency landing protocol
+      if (yValue > 120) {  // emergency landing protocol
         interval = millis() + floatTime;
         if (millis() < interval) {
           ESC1.write(70);  //top left -aclk
@@ -274,20 +278,20 @@ void loop() {
     }
   } else {
     Serial.println("controlling drone");
-    //value 1-180
-    ESC1.write(yValue);  //top left -aclk
-    ESC2.write(yValue);  //top right - clk
-    ESC3.write(yValue);  //bottom left -aclk
-    ESC4.write(yValue);  //bottom left - clk
     if (payload) {
       myservo.write(50);
     } else {
       myservo.write(0);
     }
-    // ESC1.write(yValue * multTL);  //top left -aclk
-    // ESC2.write(yValue * multTR);  //top right - clk
-    // ESC3.write(yValue * multBL);  //bottom left -aclk
-    // ESC4.write(yValue * multBR);  //bottom left - clk
+    //value 1-180
+    // ESC1.write(yValue);  //top left -aclk
+    // ESC2.write(yValue);  //top right - clk
+    // ESC3.write(yValue);  //bottom left -aclk
+    // ESC4.write(yValue);  //bottom left - clk
+    ESC1.write(yValue * multTL);  //top left -aclk
+    ESC2.write(yValue * multTR);  //top right - clk
+    ESC3.write(yValue * multBL);  //bottom left -aclk
+    ESC4.write(yValue * multBR);  //bottom left - clk
     //    ESC1.write(yValue - ((xValue - 512) / 4) - (yValue2 - 512 / 4) - ((512 - xValue2) / 4)); //top left -aclk
     //    ESC2.write(yValue - ((512 - xValue) / 4) - (512 - yValue2 / 4) - ((xValue2 - 512) / 4)); //top right - clk
     //    ESC3.write(yValue - ((xValue - 512) / 4) - (yValue2 - 512 / 4) - ((512 - xValue2) / 4)); //bottom left -aclk
