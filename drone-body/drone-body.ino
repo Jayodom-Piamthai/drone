@@ -237,25 +237,26 @@ void loop() {
     multBR = 1;
   }
   //hard limit - so drone wont just fell down when mpu goes wrong
-  if (multTL > 1.4) {
-    multTL = 1.4;
-  } else if (multTL < -1.4) {
-    multTL = -1.4;
+  int limit = 1.2 ;
+  if (multTL > limit) {
+    multTL = limit;
+  } else if (multTL < -limit) {
+    multTL = -limit;
   }
-  if (multTR > 1.4) {
-    multTR = 1.4;
-  } else if (multTR < -1.4) {
-    multTR = -1.4;
+  if (multTR > limit) {
+    multTR = limit;
+  } else if (multTR < -limit) {
+    multTR = -limit;
   }
-  if (multBL > 1.4) {
-    multBL = 1.4;
-  } else if (multBL < -1.4) {
-    multBL = -1.4;
+  if (multBL > limit) {
+    multBL = limit;
+  } else if (multBL < -limit) {
+    multBL = -limit;
   }
-  if (multBR > 1.4) {
-    multBR = 1.4;
-  } else if (multBR < -1.4) {
-    multBR = -1.4;
+  if (multBR > limit) {
+    multBR = limit;
+  } else if (multBR < -limit) {
+    multBR = -limit;
   }
   //test pot
   //  potValue = analogRead(A0);   // reads the value of the potentiometer (value between 0 and 1023) for test
@@ -292,10 +293,10 @@ void loop() {
       myservo.write(0);
     }
     //value 1-180
-    ESC1.write(yValue);  //top left -aclk
-    ESC2.write(yValue);  //top right - clk
-    ESC3.write(yValue);  //bottom left -aclk
-    ESC4.write(yValue);  //bottom left - clk
+    ESC1.write(yValue);  //top left -aclk 5
+    ESC2.write(yValue);  //top right - clk 6
+    ESC3.write(yValue);  //bottom left -aclk 7
+    ESC4.write(yValue);  //bottom left - clk 8
     // ESC1.write(yValue * multTL);  //top left -aclk
     // ESC2.write(yValue * multTR);  //top right - clk
     // ESC3.write(yValue * multBL);  //bottom left -aclk
