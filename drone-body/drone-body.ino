@@ -187,47 +187,55 @@ void loop() {
   //Y forward and backward tilting,foward goes toward 180 and backward goes toward 0,idealy remains at 90 flat
   //Z parallel to the ground,ard faces upward toward the sky perfectly parallel at 180 and lower to 0 as the top face toward the ground
   //multiplier to thrust value based
-  xValue = map(xValue, 0, 1023, 0, 180);    //turn left/right
-  yValue = map(yValue, 0, 1023, 0, 180);    //thrust force
-  xValue2 = map(xValue2, 0, 1023, 0, 180);  //tilt left/right
-  yValue2 = map(yValue2, 0, 1023, 0, 180);  //tilt forward/backward
-  //mpu correction - moving toward the set point once past half speed
-  if (valx > xValue2) {  //left tilt. increase left side,decrease right side. incrementally
-    multTL += 0.05;
-    multTR -= 0.05;
-    multBL += 0.05;
-    multBR -= 0.05;
-  }
-  if (valx < xValue2) {  //right tilt. increase right side,decrease left side. incrementally
-    multTL -= 0.05;
-    multTR += 0.05;
-    multBL -= 0.05;
-    multBR += 0.05;
-  }
-  if (valy > yValue2) {  //left tilt. increase left side,decrease right side. incrementally
-    multTL += 0.05;
-    multTR += 0.05;
-    multBL -= 0.05;
-    multBR -= 0.05;
-  }
-  if (valy < yValue2) {  //left tilt. increase left side,decrease right side. incrementally
-    multTL -= 0.05;
-    multTR -= 0.05;
-    multBL += 0.05;
-    multBR += 0.05;
-  }
-  if (xValue > 90) {  //turn right
-    multTL += 0.05;
-    multTR -= 0.05;
-    multBL -= 0.05;
-    multBR += 0.05;
-  } else {  //turn left
-    multTL -= 0.05;
-    multTR += 0.05;
-    multBL += 0.05;
-    multBR -= 0.05;
-  }
+  int topValue = 150 ;// for easier control
+  xValue = map(xValue, 0, 1023, 0, topValue);    //turn left/right
+  yValue = map(yValue, 0, 1023, 0, topValue);    //thrust force
+  xValue2 = map(xValue2, 0, 1023, 0, topValue);  //tilt left/right
+  yValue2 = map(yValue2, 0, 1023, 0, topValue);  //tilt forward/backward
+  //mpu correction - moving toward the set point once past quarter speed(liftoff)
+  if (yValue > 45) {
 
+    if (valx > xValue2) {  //left tilt. increase left side,decrease right side. incrementally
+      multTL += 0.05;
+      multTR -= 0.05;
+      multBL += 0.05;
+      multBR -= 0.05;
+    }
+    if (valx < xValue2) {  //right tilt. increase right side,decrease left side. incrementally
+      multTL -= 0.05;
+      multTR += 0.05;
+      multBL -= 0.05;
+      multBR += 0.05;
+    }
+    if (valy > yValue2) {  //left tilt. increase left side,decrease right side. incrementally
+      multTL += 0.05;
+      multTR += 0.05;
+      multBL -= 0.05;
+      multBR -= 0.05;
+    }
+    if (valy < yValue2) {  //left tilt. increase left side,decrease right side. incrementally
+      multTL -= 0.05;
+      multTR -= 0.05;
+      multBL += 0.05;
+      multBR += 0.05;
+    }
+    if (xValue > 90) {  //turn right
+      multTL += 0.05;
+      multTR -= 0.05;
+      multBL -= 0.05;
+      multBR += 0.05;
+    } else {  //turn left
+      multTL -= 0.05;
+      multTR += 0.05;
+      multBL += 0.05;
+      multBR -= 0.05;
+    }
+  } else {
+    multTL = 1;
+    multTR = 1;
+    multBL = 1;
+    multBR = 1;
+  }
   //hard limit - so drone wont just fell down when mpu goes wrong
   if (multTL > 1.4) {
     multTL = 1.4;
@@ -284,14 +292,14 @@ void loop() {
       myservo.write(0);
     }
     //value 1-180
-    // ESC1.write(yValue);  //top left -aclk
-    // ESC2.write(yValue);  //top right - clk
-    // ESC3.write(yValue);  //bottom left -aclk
-    // ESC4.write(yValue);  //bottom left - clk
-    ESC1.write(yValue * multTL);  //top left -aclk
-    ESC2.write(yValue * multTR);  //top right - clk
-    ESC3.write(yValue * multBL);  //bottom left -aclk
-    ESC4.write(yValue * multBR);  //bottom left - clk
+    ESC1.write(yValue);  //top left -aclk
+    ESC2.write(yValue);  //top right - clk
+    ESC3.write(yValue);  //bottom left -aclk
+    ESC4.write(yValue);  //bottom left - clk
+    // ESC1.write(yValue * multTL);  //top left -aclk
+    // ESC2.write(yValue * multTR);  //top right - clk
+    // ESC3.write(yValue * multBL);  //bottom left -aclk
+    // ESC4.write(yValue * multBR);  //bottom left - clk
     //    ESC1.write(yValue - ((xValue - 512) / 4) - (yValue2 - 512 / 4) - ((512 - xValue2) / 4)); //top left -aclk
     //    ESC2.write(yValue - ((512 - xValue) / 4) - (512 - yValue2 / 4) - ((xValue2 - 512) / 4)); //top right - clk
     //    ESC3.write(yValue - ((xValue - 512) / 4) - (yValue2 - 512 / 4) - ((512 - xValue2) / 4)); //bottom left -aclk
