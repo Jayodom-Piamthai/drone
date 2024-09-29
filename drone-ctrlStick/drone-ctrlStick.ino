@@ -1,6 +1,6 @@
 //joystick setup
-#define VRX_PIN 25  // Arduino pin connected to VRX pin
-#define VRY_PIN 26  // Arduino pin connected to VRY pin
+#define VRX_PIN 34  // Arduino pin connected to VRX pin
+#define VRY_PIN 35  // Arduino pin connected to VRY pin
 #define VRX2_PIN 32
 #define VRY2_PIN 33
 int xValue = 0;  // To store value of the X axis
@@ -35,12 +35,30 @@ int mpux;
 int mpuy;
 int mpuz;
 
+//wifi & data parsing
+#include <WiFi.h>
+//wifi config
+const char* ssid = "Thor2558";
+const char* password = "0831131238";
+//mqtt config
+#include <PubSubClient.h>
+#include <ArduinoMqttClient.h>
+const char broker[] = "172.168.0.1";  //"test.mosquitto.org" -0.0.0.0 is hivemq
+int port = 1883;
+const char* userID = "droneRemote";
+const char topic[] = "droneSend";
+
+WiFiClient wifiClient;
+MqttClient mqttClient(wifiClient);
+
 void setup() {
   Serial.begin(38400);
   Serial.println("drone begin");
   millis();
-  pinMode(2,INPUT);
-  pinMode(4,INPUT);
+  pinMode(2, INPUT);
+  pinMode(4, INPUT);
+  pinMode(VRX_PIN, INPUT);
+  pinMode(VRY_PIN, INPUT);
   //LoRa
   LoRa.setPins(ss, rst, dio0);
   while (!Serial)
@@ -51,11 +69,34 @@ void setup() {
       ;
   }
   Serial.println("LoRa Receiver Started");
+  //WiFi connection
+  WiFi.begin(ssid, password);
+  Serial.println("\nConnecting");
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(100);
+  }
+  Serial.println("\nConnected to the WiFi network");
+  Serial.print("Local ESP32 IP: ");
+  Serial.println(WiFi.localIP());
+
+  //mqtt connection
+  // Serial.print("Attempting to connect to the MQTT broker: ");
+  // Serial.println(broker);
+
+  // if (!mqttClient.connect(broker, port)) {
+  //   Serial.print("MQTT connection failed! Error code = ");
+  //   Serial.println(mqttClient.connectError());
+  //   // while (1)
+  //   //   ;
+  // }
+  // Serial.println("You're connected to the MQTT broker!");
+
   interval = millis() + 10000;
 }
 
 void loop() {
-
+  // mqttClient.poll();
   // put your main code here, to run repeatedly:
   //joystick input
   //x goes 0-4095 from left to right offset 25 up(~485)
@@ -87,18 +128,17 @@ void loop() {
     payload = 0;
   }
   if (digitalRead(hoverPin) == true) {
-    if(!hoverLock){
-      if(yValue < 100){
-        yValue = 1; //for lock at near-stop moving so can be safely turn off
+    if (!hoverLock) {
+      if (yValue < 100) {
+        yValue = 1;  //for lock at near-stop moving so can be safely turn off
       }
       hoverLock = yValue;
     }
-    yValue = hoverLock ;
-  }
-  else{
+    yValue = hoverLock;
+  } else {
     hoverLock = 0;
   }
-  
+
   // print data to Serial Monitor on Arduino IDE
   Serial.print("x = ");
   Serial.print(xValue);
@@ -131,6 +171,9 @@ void loop() {
           rawInput += ((char)LoRa.read());  //recieve message as ascii char and put into string
         }
         Serial.println(rawInput);
+        // mqttClient.beginMessage(topic);
+        // mqttClient.print(rawInput);
+        // mqttClient.endMessage();
         temp = rawInput.substring(0, rawInput.indexOf(",")).toInt();
         humid = rawInput.substring(rawInput.indexOf(",") + 1, rawInput.indexOf("<")).toInt();
         mpux = rawInput.substring(rawInput.indexOf("<") + 1, rawInput.indexOf(".")).toInt();
