@@ -15,7 +15,7 @@ int ledY = 5;
 int pin11 = 11, pin10 = 10;
 int val1, val2;
 int valgy1 = 0, valgy2 = 0;
-int margin = 30;  // set margin for mpu to joy control
+int margin = 8;  // set margin for mpu to joy control
 
 //dht22
 int temp;
@@ -52,15 +52,16 @@ int xValue;
 int yValue;
 int xValue2;
 int yValue2;
-float multTL = 1;   //top left -aclk
-float multTR = 1;   //top right - clk
-float multBL = 1;   //bottom left -aclk
-float multBR = 1;   //bottom left - clk
-float multTrn = 1;  //mult for turning left/right
+float multTL = 1;    //top left -aclk
+float multTR = 1;    //top right - clk
+float multBL = 1;    //bottom left -aclk
+float multBR = 1;    //bottom left - clk
+float multLeft = 1;  //mult for turning left/right
+float multRight = 1;
 bool recieved;
 long lastPack;
 int payload;
-long floatTime = 120000;  //emergency floatdown time
+long floatTime = 60000;  //emergency floatdown time
 
 
 void setup() {
@@ -109,9 +110,9 @@ void setup() {
 void loop() {
   //MPU
   mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
-  valx = map(ax, -17000, 17000, 0, 180);  //left and right tilting,left goes toward 180 and right goes toward 0,idealy remains at 90 flat
-  valy = map(ay, -17000, 17000, 0, 180);  //forward and backward tilting, goes toward 180 and right goes toward ,idealy remains at 90 flat
-  valz = map(az, -17000, 17000, 0, 180);  //parallel to the ground,ard faces upward toward the sky perfectly parallel at 180 and lower to 0 as the top face toward the ground
+  valx = map(ax, -17000, 17000, 180, 0);  //left and right tilting,left goes toward 0 and right goes toward 180,idealy remains at 90 flat
+  valy = map(ay, -17000, 17000, 180, 0);  //forward and backward tilting, goes back toward 0 and front goes toward 180,idealy remains at 90 flat
+  valz = map(az, -17000, 17000, 180, 0);  //parallel to the ground,ard faces upward toward the sky perfectly parallel at 0 and higher to 180 as the top face toward the ground
   //  for visualization/
   // Serial.print(valx);
   // Serial.print("/");
@@ -144,14 +145,25 @@ void loop() {
       while (LoRa.available()) {
         rawInput += ((char)LoRa.read());  //recieve message as ascii char and put into string
       }
-      Serial.print(rawInput);
+      Serial.println(rawInput);
       xValue = rawInput.substring(0, rawInput.indexOf(",")).toInt();
       yValue = rawInput.substring(rawInput.indexOf(",") + 1, rawInput.indexOf("<")).toInt();
       xValue2 = rawInput.substring(rawInput.indexOf("<") + 1, rawInput.indexOf(".")).toInt();
       yValue2 = rawInput.substring(rawInput.indexOf(".") + 1, rawInput.indexOf(">")).toInt();
       payload = rawInput.substring(rawInput.indexOf(">") + 1, rawInput.indexOf("/")).toInt();
       kickback = rawInput.substring(rawInput.indexOf("/") + 1, -1).toInt();
-      Serial.print("x = ");
+      //mapping for esc control
+      xValue = map(xValue, 0, 1023, 0, 180);    //turn left/right
+      yValue = map(yValue, 0, 1023, 0, 180);    //thrust force -- adjust accordingly for easier control
+      xValue2 = map(xValue2, 0, 1023, 0, 180);  //tilt left/right
+      yValue2 = map(yValue2, 0, 1023, 0, 180);  //tilt forward/backward
+      Serial.print(valx);
+      Serial.print("/");
+      Serial.print(valy);
+      Serial.print("/");
+      Serial.print(valz);
+      Serial.print("/");
+      Serial.print(" |  x = ");
       Serial.print(xValue);
       Serial.print(", y = ");
       Serial.print(yValue);
@@ -187,77 +199,11 @@ void loop() {
   //Y forward and backward tilting,foward goes toward 180 and backward goes toward 0,idealy remains at 90 flat
   //Z parallel to the ground,ard faces upward toward the sky perfectly parallel at 180 and lower to 0 as the top face toward the ground
   //multiplier to thrust value based
-  int topValue = 150 ;// for easier control
-  xValue = map(xValue, 0, 1023, 0, topValue);    //turn left/right
-  yValue = map(yValue, 0, 1023, 0, topValue);    //thrust force
-  xValue2 = map(xValue2, 0, 1023, 0, topValue);  //tilt left/right
-  yValue2 = map(yValue2, 0, 1023, 0, topValue);  //tilt forward/backward
   //mpu correction - moving toward the set point once past quarter speed(liftoff)
-  if (yValue > 45) {
-
-    if (valx > xValue2) {  //left tilt. increase left side,decrease right side. incrementally
-      multTL += 0.05;
-      multTR -= 0.05;
-      multBL += 0.05;
-      multBR -= 0.05;
-    }
-    if (valx < xValue2) {  //right tilt. increase right side,decrease left side. incrementally
-      multTL -= 0.05;
-      multTR += 0.05;
-      multBL -= 0.05;
-      multBR += 0.05;
-    }
-    if (valy > yValue2) {  //left tilt. increase left side,decrease right side. incrementally
-      multTL += 0.05;
-      multTR += 0.05;
-      multBL -= 0.05;
-      multBR -= 0.05;
-    }
-    if (valy < yValue2) {  //left tilt. increase left side,decrease right side. incrementally
-      multTL -= 0.05;
-      multTR -= 0.05;
-      multBL += 0.05;
-      multBR += 0.05;
-    }
-    if (xValue > 90) {  //turn right
-      multTL += 0.05;
-      multTR -= 0.05;
-      multBL -= 0.05;
-      multBR += 0.05;
-    } else {  //turn left
-      multTL -= 0.05;
-      multTR += 0.05;
-      multBL += 0.05;
-      multBR -= 0.05;
-    }
-  } else {
-    multTL = 1;
-    multTR = 1;
-    multBL = 1;
-    multBR = 1;
-  }
-  //hard limit - so drone wont just fell down when mpu goes wrong
-  int limit = 1.2 ;
-  if (multTL > limit) {
-    multTL = limit;
-  } else if (multTL < -limit) {
-    multTL = -limit;
-  }
-  if (multTR > limit) {
-    multTR = limit;
-  } else if (multTR < -limit) {
-    multTR = -limit;
-  }
-  if (multBL > limit) {
-    multBL = limit;
-  } else if (multBL < -limit) {
-    multBL = -limit;
-  }
-  if (multBR > limit) {
-    multBR = limit;
-  } else if (multBR < -limit) {
-    multBR = -limit;
-  }
+  // Serial.print("xValue2 =");
+  // Serial.print(xValue2);
+  // Serial.print(", yValue2 =");
+  // Serial.println(yValue2);
   //test pot
   //  potValue = analogRead(A0);   // reads the value of the potentiometer (value between 0 and 1023) for test
   //  potValue = map(potValue, 0, 1023, 0, 180);   // scale it to use it with the servo library (value between 0 and 180)
@@ -286,21 +232,100 @@ void loop() {
       }
     }
   } else {
-    Serial.println("controlling drone");
+    if (yValue > 30) {
+      float inc = 0.02;               //constant for incremental change
+      if (valx > xValue2 + margin) {  //left tilt. increase right side,decrease left side. incrementally
+        Serial.print("tilt left");
+        multTL -= inc;
+        multTR += inc;
+        multBL -= inc;
+        multBR += inc;
+      }
+      if (valx < xValue2 - margin) {  //right tilt. increase left side,decrease right side. incrementally
+        Serial.print("tilt right");
+        multTL += inc;
+        multTR -= inc;
+        multBL += inc;
+        multBR -= inc;
+      }
+      if (valy > yValue2 + margin) {  //backward tilt. increase top side,decrease bottom side. incrementally
+        Serial.print("tilt back");
+        multTL += inc;
+        multTR += inc;
+        multBL -= inc;
+        multBR -= inc;
+      }
+      if (valy < yValue2 - margin) {  //foward tilt. increase bottom side,decrease top side. incrementally
+        Serial.print("tilt foward");
+        multTL -= inc;
+        multTR -= inc;
+        multBL += inc;
+        multBR += inc;
+      }
+      if (xValue > 160) {  //turn left , decrease clockwise
+        multLeft = 1.2;
+        multRight = 0.8;
+      } else if (xValue < 20) {  //turn right , decrease anti clockwise
+        multLeft = 1.2;
+        multRight = 0.8;
+      } else {
+        multLeft = 1;
+        multRight = 1;
+      }
+    } else {
+      multTL = 1;
+      multTR = 1;
+      multBL = 1;
+      multBR = 1;
+      multLeft = 1;
+      multRight = 1;
+    }
+    //hard limit - so drone wont just fell down when mpu goes wrong
+    float limit = 0.2;
+    if (multTL > 1 + limit) {
+      multTL = 1 + limit;
+    } else if (multTL < 1 - limit) {
+      multTL = 1 - limit;
+    }
+    if (multTR > 1 + limit) {
+      multTR = 1 + limit;
+    } else if (multTR < 1 - limit) {
+      multTR = 1 - limit;
+    }
+    if (multBL > 1 + limit) {
+      multBL = 1 + limit;
+    } else if (multBL < 1 - limit) {
+      multBL = 1 - limit;
+    }
+    if (multBR > 1 + limit) {
+      multBR = 1 + limit;
+    } else if (multBR < 1 - limit) {
+      multBR = 1 - limit;
+    }
+    Serial.print("multTL =");
+    Serial.print(multTL);
+    Serial.print(", multTR =");
+    Serial.print(multTR);
+    Serial.print(", multBL =");
+    Serial.print(multBL);
+    Serial.print(", multBR =");
+    Serial.println(multBR);
+
+    // Serial.println("controlling drone");
     if (payload) {
       myservo.write(50);
     } else {
       myservo.write(0);
     }
     //value 1-180
-    ESC1.write(yValue);  //top left -aclk 5
-    ESC2.write(yValue);  //top right - clk 6
-    ESC3.write(yValue);  //bottom left -aclk 7
-    ESC4.write(yValue);  //bottom left - clk 8
-    // ESC1.write(yValue * multTL);  //top left -aclk
-    // ESC2.write(yValue * multTR);  //top right - clk
-    // ESC3.write(yValue * multBL);  //bottom left -aclk
-    // ESC4.write(yValue * multBR);  //bottom left - clk
+    // ESC1.write(yValue);  //top left -aclk 5
+    // ESC2.write(yValue);  //top right - clk 6
+    // ESC3.write(yValue);  //bottom left -aclk 7
+    // ESC4.write(yValue);  //bottom left - clk 8
+    ESC1.write(yValue * multTL * multLeft);   //top left -aclk
+    ESC2.write(yValue * multTR * multRight);  //top right - clk
+    ESC3.write(yValue * multBL * multLeft);   //bottom left -aclk
+    ESC4.write(yValue * multBR * multRight);  //bottom left - clk
     //    ESC1.write(yValue - ((xValue - 512) / 4) - (yValue2 - 512 / 4) - ((512 - xValue2) / 4)); //top left -aclk
     //    ESC2.write(yValue - ((512 - xValue) / 4) - (512 - yValue2 / 4) - ((xValue2 - 512) / 4)); //top right - clk
     //    ESC3.write(yValue - ((xValue - 512) / 4) - (yValue2 - 512 / 4) - ((512 - xValue2) / 4)); //bottom left -aclk

@@ -43,13 +43,13 @@ const char* password = "0831131238";
 //mqtt config
 #include <PubSubClient.h>
 #include <ArduinoMqttClient.h>
-const char broker[] = "172.168.0.1";  //"test.mosquitto.org" -0.0.0.0 is hivemq
+const char* broker = "localhost";  //"test.mosquitto.org" -0.0.0.0 is hivemq
 int port = 1883;
-const char* userID = "droneRemote";
-const char topic[] = "droneSend";
+#define ID_MQTT "esp32_mqtt"
+#define TOPIC_SUBSCRIBE_DRONEDATA "topic_droneSend"
 
 WiFiClient wifiClient;
-MqttClient mqttClient(wifiClient);
+PubSubClient MQTT(wifiClient);
 
 void setup() {
   Serial.begin(38400);
@@ -70,33 +70,23 @@ void setup() {
   }
   Serial.println("LoRa Receiver Started");
   //WiFi connection
-  WiFi.begin(ssid, password);
-  Serial.println("\nConnecting");
-  while (WiFi.status() != WL_CONNECTED) {
-    Serial.print(".");
-    delay(100);
-  }
-  Serial.println("\nConnected to the WiFi network");
-  Serial.print("Local ESP32 IP: ");
-  Serial.println(WiFi.localIP());
-
-  //mqtt connection
-  // Serial.print("Attempting to connect to the MQTT broker: ");
-  // Serial.println(broker);
-
-  // if (!mqttClient.connect(broker, port)) {
-  //   Serial.print("MQTT connection failed! Error code = ");
-  //   Serial.println(mqttClient.connectError());
-  //   // while (1)
-  //   //   ;
+  // WiFi.begin(ssid, password);
+  // Serial.println("\nConnecting");
+  // while (WiFi.status() != WL_CONNECTED) {
+  //   Serial.print(".");
+  //   delay(100);
   // }
-  // Serial.println("You're connected to the MQTT broker!");
+  // Serial.println("\nConnected to the WiFi network");
+  // Serial.print("Local ESP32 IP: ");
+  // Serial.println(WiFi.localIP());
+  // initWiFi();
+  // initMQTT(); 
 
   interval = millis() + 10000;
 }
 
 void loop() {
-  // mqttClient.poll();
+  // checkWiFIAndMQTT();
   // put your main code here, to run repeatedly:
   //joystick input
   //x goes 0-4095 from left to right offset 25 up(~485)
@@ -171,9 +161,7 @@ void loop() {
           rawInput += ((char)LoRa.read());  //recieve message as ascii char and put into string
         }
         Serial.println(rawInput);
-        // mqttClient.beginMessage(topic);
-        // mqttClient.print(rawInput);
-        // mqttClient.endMessage();
+        MQTT.publish(TOPIC_SUBSCRIBE_DRONEDATA, "what");
         temp = rawInput.substring(0, rawInput.indexOf(",")).toInt();
         humid = rawInput.substring(rawInput.indexOf(",") + 1, rawInput.indexOf("<")).toInt();
         mpux = rawInput.substring(rawInput.indexOf("<") + 1, rawInput.indexOf(".")).toInt();
@@ -205,6 +193,8 @@ void loop() {
     }
     interval = millis() + 3000;
   }
+
+  MQTT.loop();
 }
 
 //LoRa send and recieves
@@ -225,4 +215,65 @@ void sendData() {
   LoRa.println(kickback);
 
   LoRa.endPacket();
+}
+
+void initWiFi(void) {
+  delay(10);
+  Serial.println("------Connect to WI-FI------");
+  Serial.print("Connecting to : ");
+  Serial.println(ssid);
+
+  reconnectWiFi();
+}
+
+/* Initial MQTT  */
+void initMQTT(void) {
+  Serial.print("initial mqtt connecting");
+  MQTT.setServer("local host", 1883);
+  if (!MQTT.connected()) {
+    reconnectMQTT();
+  }
+}
+
+/* FUnction reconnect MQTT Broker */
+void reconnectMQTT(void) {
+  while (!MQTT.connected()) {
+    Serial.print("* Connecting MQTT Broker: ");
+    Serial.println(broker);
+    if (MQTT.connect(ID_MQTT)) {
+      Serial.println("Connecting the MQTT Broker success!");
+      MQTT.subscribe(TOPIC_SUBSCRIBE_DRONEDATA);
+    } else {
+      Serial.println("Fail to connect then reconnect MQTT Broker again in 2 seconds.");
+      delay(2000);
+    }
+  }
+}
+
+/* Function checking connected to WiFI and MQTT Broker */
+void checkWiFIAndMQTT(void) {
+  if (!MQTT.connected())
+    reconnectMQTT();
+  reconnectWiFi();
+}
+
+void reconnectWiFi(void) {
+
+  if (WiFi.status() == WL_CONNECTED)
+    return;
+
+  Serial.println(digitalRead(12));
+  delay(2000);
+
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(100);
+    Serial.print(".");
+  }
+
+  Serial.print("Connected WiFi success. ");
+  Serial.print(ssid);
+  Serial.println("IP Address: ");
+  Serial.println(WiFi.localIP());
 }
