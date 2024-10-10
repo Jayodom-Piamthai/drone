@@ -1,3 +1,4 @@
+
 //joystick setup
 #define VRX_PIN 34  // Arduino pin connected to VRX pin
 #define VRY_PIN 35  // Arduino pin connected to VRY pin
@@ -35,25 +36,73 @@ int mpux;
 int mpuy;
 int mpuz;
 
-//wifi & data parsing
+//wifi mqtt setup
 #include <WiFi.h>
-//wifi config
+#include <PubSubClient.h>
+#include <string>
+
+
+
+
 const char* ssid = "Thor2558";
 const char* password = "0831131238";
-//mqtt config
-#include <PubSubClient.h>
-#include <ArduinoMqttClient.h>
-const char* broker = "localhost";  //"test.mosquitto.org" -0.0.0.0 is hivemq
-int port = 1883;
-#define ID_MQTT "esp32_mqtt"
-#define TOPIC_SUBSCRIBE_DRONEDATA "topic_droneSend"
+const char* mqtt_server = "broker.mqtt.cool";
+WiFiClient espClient;
+PubSubClient client(espClient);
+unsigned long lastMsg = 0;
 
-WiFiClient wifiClient;
-PubSubClient MQTT(wifiClient);
+void setup_wifi() {
+  delay(10);
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+
+  randomSeed(micros());
+
+
+  // Serial.println("");
+  // Serial.println("WiFi connected");
+  // Serial.println("IP address: ");
+  // Serial.println(WiFi.localIP());
+}
+void callback(char* topic, byte* payload, unsigned int length) {
+  // Serial.print("Message arrived [");
+  // Serial.print(topic);
+  // Serial.print("] ");
+  for (int i = 0; i < length; i++) {
+    // Serial.print((char)payload[i]);
+  }
+}
+void reconnect() {
+  while (!client.connected()) {
+    Serial.print("Attempting MQTT connection...");
+    String clientId = "ESP32Client-";
+    clientId += String(random(0xffff), HEX);
+    if (client.connect(clientId.c_str())) {
+      Serial.println("Connected");
+    } else {
+      // Serial.print("failed, rc=");
+      // Serial.print(client.state());
+      // Serial.println(" try again in 5 seconds");
+      delay(5000);
+    }
+  }
+}
 
 void setup() {
   Serial.begin(38400);
-  Serial.println("drone begin");
+  // Serial.println("drone begin");
   millis();
   pinMode(2, INPUT);
   pinMode(4, INPUT);
@@ -64,23 +113,15 @@ void setup() {
   while (!Serial)
     ;
   if (!LoRa.begin(433E6)) {
-    Serial.println("Starting LoRa failed!");
+    // Serial.println("Starting LoRa failed!");
     while (1)
       ;
   }
-  Serial.println("LoRa Receiver Started");
-  //WiFi connection
-  // WiFi.begin(ssid, password);
-  // Serial.println("\nConnecting");
-  // while (WiFi.status() != WL_CONNECTED) {
-  //   Serial.print(".");
-  //   delay(100);
-  // }
-  // Serial.println("\nConnected to the WiFi network");
-  // Serial.print("Local ESP32 IP: ");
-  // Serial.println(WiFi.localIP());
-  // initWiFi();
-  // initMQTT(); 
+  // Serial.println("LoRa Receiver Started");
+  //mqtt
+  setup_wifi();
+  client.setServer(mqtt_server, 1883);
+  client.setCallback(callback);
 
   interval = millis() + 10000;
 }
@@ -88,6 +129,12 @@ void setup() {
 void loop() {
   // checkWiFIAndMQTT();
   // put your main code here, to run repeatedly:
+
+  //mqtt
+  if (!client.connected()) {
+    reconnect();
+  }
+  client.loop();
   //joystick input
   //x goes 0-4095 from left to right offset 25 up(~485)
   //y goes 0-4095 from top to bottom (bot-top with mapping)offset 20 down (~537)
@@ -130,29 +177,29 @@ void loop() {
   }
 
   // print data to Serial Monitor on Arduino IDE
-  Serial.print("x = ");
-  Serial.print(xValue);
-  Serial.print(", y = ");
-  Serial.print(yValue);
-  Serial.print(", x2 = ");
-  Serial.print(xValue2);
-  Serial.print(", y2 = ");
-  Serial.print(yValue2);
-  Serial.print(", hover = ");
-  Serial.print(hoverLock);
-  Serial.print(", payload = ");
-  Serial.println(payload);
-  delay(1);
+  // Serial.print("x = ");
+  // Serial.print(xValue);
+  // Serial.print(", y = ");
+  // Serial.print(yValue);
+  // Serial.print(", x2 = ");
+  // Serial.print(xValue2);
+  // Serial.print(", y2 = ");
+  // Serial.print(yValue2);
+  // Serial.print(", hover = ");
+  // Serial.print(hoverLock);
+  // Serial.print(", payload = ");
+  // Serial.println(payload);
+  // delay(1);
 
   if (millis() < interval && !kickback) {  //normally sends joy data
     sendData();
-    Serial.println(count);
-    Serial.println("sending");
+    // Serial.println(count);
+    // Serial.println("sending");
   } else if (kickback) {        // waiting for data when in kickback
     if (millis() < interval) {  //enter 3 second period to catch data
       int packetSize = LoRa.parsePacket();
       if (packetSize) {  //if caught get out of kickback,set interval and var
-        Serial.println("package recieved");
+        // Serial.println("package recieved");
         count += 1;
         kickback = 0;
         interval = millis() + 5000;  // catch again in 5 sec
@@ -160,33 +207,39 @@ void loop() {
         while (LoRa.available()) {
           rawInput += ((char)LoRa.read());  //recieve message as ascii char and put into string
         }
-        Serial.println(rawInput);
-        MQTT.publish(TOPIC_SUBSCRIBE_DRONEDATA, "what");
+        // Serial.println(rawInput);
         temp = rawInput.substring(0, rawInput.indexOf(",")).toInt();
         humid = rawInput.substring(rawInput.indexOf(",") + 1, rawInput.indexOf("<")).toInt();
         mpux = rawInput.substring(rawInput.indexOf("<") + 1, rawInput.indexOf(".")).toInt();
         mpuy = rawInput.substring(rawInput.indexOf(".") + 1, rawInput.indexOf(">")).toInt();
         mpuz = rawInput.substring(rawInput.indexOf(">") + 1, -1).toInt();
-        Serial.print("temp = ");
-        Serial.print(temp);
-        Serial.print(", humid = ");
-        Serial.print(humid);
-        Serial.print(", mpux = ");
-        Serial.print(mpux);
-        Serial.print(", mpuy = ");
-        Serial.print(mpuy);
-        Serial.print(", mpuz = ");
-        Serial.println(mpuz);
+        // Serial.print("temp = ");
+        // Serial.print(temp);
+        // Serial.print(", humid = ");
+        // Serial.print(humid);
+        // Serial.print(", mpux = ");
+        // Serial.print(mpux);
+        // Serial.print(", mpuy = ");
+        // Serial.print(mpuy);
+        // Serial.print(", mpuz = ");
+        // Serial.println(mpuz);
+        // mqtt send
+        std::string s = std::to_string(humid);
+        std::string t = std::to_string(temp);
+        std::string u = s + "," + t;
+        char const* c = u.c_str();
+        client.publish("Dronedata", c);
+        Serial.println(c);
       }
     } else {  //cant catch in timeframe,get out of kickback and continue sending
       kickback = 0;
       interval = millis() + 5000;
-      Serial.println("kickback failed,proceed");
+      // Serial.println("kickback failed,proceed");
     }
   } else {  //interval reached,entering kickback and sending signal to request data back from drone
     kickback = 1;
     kickround = 0;
-    Serial.println("kicking");
+    // Serial.println("kicking");
     while (kickround < 5) {
       sendData();
       kickround += 1;
@@ -194,7 +247,6 @@ void loop() {
     interval = millis() + 3000;
   }
 
-  MQTT.loop();
 }
 
 //LoRa send and recieves
@@ -215,65 +267,4 @@ void sendData() {
   LoRa.println(kickback);
 
   LoRa.endPacket();
-}
-
-void initWiFi(void) {
-  delay(10);
-  Serial.println("------Connect to WI-FI------");
-  Serial.print("Connecting to : ");
-  Serial.println(ssid);
-
-  reconnectWiFi();
-}
-
-/* Initial MQTT  */
-void initMQTT(void) {
-  Serial.print("initial mqtt connecting");
-  MQTT.setServer("local host", 1883);
-  if (!MQTT.connected()) {
-    reconnectMQTT();
-  }
-}
-
-/* FUnction reconnect MQTT Broker */
-void reconnectMQTT(void) {
-  while (!MQTT.connected()) {
-    Serial.print("* Connecting MQTT Broker: ");
-    Serial.println(broker);
-    if (MQTT.connect(ID_MQTT)) {
-      Serial.println("Connecting the MQTT Broker success!");
-      MQTT.subscribe(TOPIC_SUBSCRIBE_DRONEDATA);
-    } else {
-      Serial.println("Fail to connect then reconnect MQTT Broker again in 2 seconds.");
-      delay(2000);
-    }
-  }
-}
-
-/* Function checking connected to WiFI and MQTT Broker */
-void checkWiFIAndMQTT(void) {
-  if (!MQTT.connected())
-    reconnectMQTT();
-  reconnectWiFi();
-}
-
-void reconnectWiFi(void) {
-
-  if (WiFi.status() == WL_CONNECTED)
-    return;
-
-  Serial.println(digitalRead(12));
-  delay(2000);
-
-  WiFi.begin(ssid, password);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(100);
-    Serial.print(".");
-  }
-
-  Serial.print("Connected WiFi success. ");
-  Serial.print(ssid);
-  Serial.println("IP Address: ");
-  Serial.println(WiFi.localIP());
 }
