@@ -233,7 +233,7 @@ void loop() {
     }
   } else {
     if (yValue > 30) {
-      float inc = 0.02;               //constant for incremental change
+      float inc = 0.04;               //constant for incremental change
       if (valx > xValue2 + margin) {  //left tilt. increase right side,decrease left side. incrementally
         Serial.print("tilt left");
         multTL -= inc;
