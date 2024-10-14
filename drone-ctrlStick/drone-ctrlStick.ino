@@ -44,9 +44,9 @@ int mpuz;
 
 
 
-const char* ssid = "Thor2558";
-const char* password = "0831131238";
-const char* mqtt_server = "broker.mqtt.cool";
+const char* ssid = "ACE'S HOTSPOT";
+const char* password = "1432605ace";
+const char* mqtt_server = "test.mosquitto.org";
 WiFiClient espClient;
 PubSubClient client(espClient);
 unsigned long lastMsg = 0;
@@ -134,7 +134,6 @@ void loop() {
   if (!client.connected()) {
     reconnect();
   }
-  client.loop();
   //joystick input
   //x goes 0-4095 from left to right offset 25 up(~485)
   //y goes 0-4095 from top to bottom (bot-top with mapping)offset 20 down (~537)
@@ -228,7 +227,9 @@ void loop() {
         std::string t = std::to_string(temp);
         std::string u = s + "," + t;
         char const* c = u.c_str();
-        client.publish("Dronedata", c);
+        client.publish("droneData", c);
+        client.publish("droneHumid", s.c_str());
+        client.publish("droneTemp", t.c_str());
         Serial.println(c);
       }
     } else {  //cant catch in timeframe,get out of kickback and continue sending
@@ -246,7 +247,7 @@ void loop() {
     }
     interval = millis() + 3000;
   }
-
+  client.loop();
 }
 
 //LoRa send and recieves
