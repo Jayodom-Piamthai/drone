@@ -1,43 +1,16 @@
 [
     {
-        "id": "2355db69bf9cfabd",
+        "id": "d416336ea581ae7e",
         "type": "tab",
-        "label": "Flow 1",
+        "label": "drone",
         "disabled": false,
         "info": "",
         "env": []
     },
     {
-        "id": "cbc6556f0197b42b",
-        "type": "inject",
-        "z": "2355db69bf9cfabd",
-        "name": "",
-        "props": [
-            {
-                "p": "payload"
-            }
-        ],
-        "repeat": "",
-        "crontab": "",
-        "once": false,
-        "onceDelay": 0.1,
-        "topic": "",
-        "payload": "31.8",
-        "payloadType": "num",
-        "x": 90,
-        "y": 200,
-        "wires": [
-            [
-                "7dc63f23e983abc3",
-                "9dbf1459ffb48782",
-                "f47b47fb89feb487"
-            ]
-        ]
-    },
-    {
-        "id": "346aa43a853f9480",
+        "id": "ab0e89d29d4738a2",
         "type": "mysql",
-        "z": "2355db69bf9cfabd",
+        "z": "d416336ea581ae7e",
         "mydb": "4c183d530da182c4",
         "name": "",
         "x": 580,
@@ -47,9 +20,9 @@
         ]
     },
     {
-        "id": "a5e5685d7195e4e7",
+        "id": "28e5456faae1eb87",
         "type": "function",
-        "z": "2355db69bf9cfabd",
+        "z": "d416336ea581ae7e",
         "name": "convert",
         "func": "var a = `INSERT INTO data (hum, temp) VALUES (?,?)`;\nmsg.topic = a\n\nreturn msg;",
         "outputs": 1,
@@ -62,15 +35,15 @@
         "y": 280,
         "wires": [
             [
-                "c0da4f1c3382590f",
-                "346aa43a853f9480"
+                "a9dddb21c491237c",
+                "ab0e89d29d4738a2"
             ]
         ]
     },
     {
-        "id": "7dc63f23e983abc3",
+        "id": "4e9e186465cdd5c3",
         "type": "function",
-        "z": "2355db69bf9cfabd",
+        "z": "d416336ea581ae7e",
         "name": "Split",
         "func": "let a = msg.payload;\nlet b = a.split(',');\n\nmsg.payload = b\n\nreturn msg;",
         "outputs": 1,
@@ -83,14 +56,14 @@
         "y": 200,
         "wires": [
             [
-                "a5e5685d7195e4e7"
+                "28e5456faae1eb87"
             ]
         ]
     },
     {
-        "id": "c0da4f1c3382590f",
+        "id": "a9dddb21c491237c",
         "type": "debug",
-        "z": "2355db69bf9cfabd",
+        "z": "d416336ea581ae7e",
         "name": "debug 9",
         "active": true,
         "tosidebar": true,
@@ -104,131 +77,9 @@
         "wires": []
     },
     {
-        "id": "44bc83b14759cf44",
-        "type": "debug",
-        "z": "2355db69bf9cfabd",
-        "name": "debug 10",
-        "active": false,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "false",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 240,
-        "y": 300,
-        "wires": []
-    },
-    {
-        "id": "9dbf1459ffb48782",
-        "type": "ui_gauge",
-        "z": "2355db69bf9cfabd",
-        "name": "",
-        "group": "be5ff8d263d3a60c",
-        "order": 0,
-        "width": 0,
-        "height": 0,
-        "gtype": "gage",
-        "title": "Temperature",
-        "label": "°C",
-        "format": "{{value}}",
-        "min": "10",
-        "max": "50",
-        "colors": [
-            "#00b500",
-            "#e6e600",
-            "#ca3838"
-        ],
-        "seg1": "30",
-        "seg2": "45",
-        "diff": false,
-        "className": "",
-        "x": 590,
-        "y": 340,
-        "wires": []
-    },
-    {
-        "id": "7790620bd4104ebb",
-        "type": "ui_gauge",
-        "z": "2355db69bf9cfabd",
-        "name": "",
-        "group": "be5ff8d263d3a60c",
-        "order": 1,
-        "width": 0,
-        "height": 0,
-        "gtype": "gage",
-        "title": "Humidity",
-        "label": "g/m3",
-        "format": "{{value}}",
-        "min": 0,
-        "max": "50",
-        "colors": [
-            "#00b500",
-            "#e6e600",
-            "#ca3838"
-        ],
-        "seg1": "30",
-        "seg2": "45",
-        "diff": false,
-        "className": "",
-        "x": 580,
-        "y": 400,
-        "wires": []
-    },
-    {
-        "id": "67ef8dd57e68deb4",
+        "id": "2aed22004d83df9a",
         "type": "inject",
-        "z": "2355db69bf9cfabd",
-        "name": "",
-        "props": [
-            {
-                "p": "payload"
-            },
-            {
-                "p": "topic",
-                "vt": "str"
-            }
-        ],
-        "repeat": "",
-        "crontab": "",
-        "once": false,
-        "onceDelay": 0.1,
-        "topic": "",
-        "payload": "40",
-        "payloadType": "num",
-        "x": 390,
-        "y": 400,
-        "wires": [
-            [
-                "7790620bd4104ebb"
-            ]
-        ]
-    },
-    {
-        "id": "e4cf3ac2e1167ecf",
-        "type": "ui_text",
-        "z": "2355db69bf9cfabd",
-        "group": "be5ff8d263d3a60c",
-        "order": 2,
-        "width": 0,
-        "height": 0,
-        "name": "",
-        "label": "",
-        "format": "{{msg.topic}}",
-        "layout": "row-center",
-        "className": "",
-        "style": false,
-        "font": "",
-        "fontSize": 16,
-        "color": "#000000",
-        "x": 570,
-        "y": 480,
-        "wires": []
-    },
-    {
-        "id": "bcf825e80c06c5fb",
-        "type": "inject",
-        "z": "2355db69bf9cfabd",
+        "z": "d416336ea581ae7e",
         "name": "",
         "props": [
             {
@@ -247,23 +98,39 @@
         "topic": "",
         "payload": "iso",
         "payloadType": "date",
-        "x": 370,
-        "y": 480,
+        "x": 190,
+        "y": 600,
         "wires": [
             [
-                "e4cf3ac2e1167ecf"
+                "d14d810b16e9a1db"
             ]
         ]
     },
     {
-        "id": "f47b47fb89feb487",
-        "type": "ui_chart",
-        "z": "2355db69bf9cfabd",
-        "name": "",
-        "group": "be5ff8d263d3a60c",
+        "id": "d14d810b16e9a1db",
+        "type": "ui_text",
+        "z": "d416336ea581ae7e",
+        "group": "d6368fbf01d60a0f",
         "order": 3,
         "width": 0,
         "height": 0,
+        "name": "",
+        "label": "",
+        "format": "{{msg.topic}}",
+        "layout": "row-center",
+        "x": 390,
+        "y": 600,
+        "wires": []
+    },
+    {
+        "id": "ebc85de514e9e944",
+        "type": "ui_chart",
+        "z": "d416336ea581ae7e",
+        "name": "",
+        "group": "d6368fbf01d60a0f",
+        "order": 5,
+        "width": 24,
+        "height": 5,
         "label": "Temperature",
         "chartType": "line",
         "legend": "false",
@@ -292,50 +159,262 @@
         ],
         "outputs": 1,
         "useDifferentColor": false,
-        "className": "",
-        "x": 770,
-        "y": 340,
+        "x": 810,
+        "y": 380,
         "wires": [
             []
         ]
     },
     {
-        "id": "63f27588407a633e",
-        "type": "debug",
-        "z": "2355db69bf9cfabd",
-        "name": "debug 11",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "payload",
-        "targetType": "msg",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 300,
-        "y": 100,
-        "wires": []
-    },
-    {
-        "id": "61d2b501f3bbb26f",
+        "id": "ce6bfb37703046bb",
         "type": "mqtt in",
-        "z": "2355db69bf9cfabd",
+        "z": "d416336ea581ae7e",
         "name": "",
-        "topic": "Dronedata",
-        "qos": "0",
+        "topic": "droneData",
+        "qos": "2",
         "datatype": "auto-detect",
-        "broker": "5ddb94381a74ae8d",
+        "broker": "5b07ce00991d69ed",
         "nl": false,
         "rap": true,
         "rh": 0,
         "inputs": 0,
         "x": 80,
-        "y": 300,
+        "y": 280,
         "wires": [
             [
-                "44bc83b14759cf44"
+                "4e9e186465cdd5c3",
+                "bc1a2fb02bc3911d"
             ]
         ]
+    },
+    {
+        "id": "bc1a2fb02bc3911d",
+        "type": "function",
+        "z": "d416336ea581ae7e",
+        "name": "function 2",
+        "func": "var a = msg.payload;\nvar b = a.substring(0,a.indexOf(\",\"));\nvar c = a.substring(a.indexOf(\",\"),a.length);\n// msg.payload = `b = ${b} , c = ${c}`\nmsg.payload.humid = b;\nmsg.payload.temp = c;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 280,
+        "y": 360,
+        "wires": [
+            [
+                "55ee6a37924cbf91"
+            ]
+        ]
+    },
+    {
+        "id": "53db802f09a80a25",
+        "type": "ui_chart",
+        "z": "d416336ea581ae7e",
+        "name": "Humidity",
+        "group": "d6368fbf01d60a0f",
+        "order": 4,
+        "width": 24,
+        "height": 5,
+        "label": "Humidity",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": 1,
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "x": 800,
+        "y": 460,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "765f34fba5b5f66b",
+        "type": "ui_gauge",
+        "z": "d416336ea581ae7e",
+        "name": "",
+        "group": "d6368fbf01d60a0f",
+        "order": 2,
+        "width": 12,
+        "height": 4,
+        "gtype": "gage",
+        "title": "Temperature",
+        "label": "°C",
+        "format": "{{value}}",
+        "min": "0",
+        "max": "100",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "30",
+        "seg2": "40",
+        "x": 810,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "8de104ceeec51316",
+        "type": "inject",
+        "z": "d416336ea581ae7e",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "25,20",
+        "payloadType": "str",
+        "x": 190,
+        "y": 480,
+        "wires": [
+            [
+                "bc1a2fb02bc3911d"
+            ]
+        ]
+    },
+    {
+        "id": "55ee6a37924cbf91",
+        "type": "switch",
+        "z": "d416336ea581ae7e",
+        "name": "",
+        "property": "payload.temp",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 350,
+        "y": 440,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "3ae1fb592c5b07c4",
+        "type": "rbe",
+        "z": "d416336ea581ae7e",
+        "name": "",
+        "func": "rbe",
+        "gap": "",
+        "start": "",
+        "inout": "out",
+        "septopics": true,
+        "property": "payload",
+        "topi": "topic",
+        "x": 370,
+        "y": 520,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "613cefb4ed5438be",
+        "type": "mqtt in",
+        "z": "d416336ea581ae7e",
+        "name": "",
+        "topic": "droneTemp",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "5b07ce00991d69ed",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 540,
+        "y": 360,
+        "wires": [
+            [
+                "765f34fba5b5f66b",
+                "ebc85de514e9e944"
+            ]
+        ]
+    },
+    {
+        "id": "1ec9821b900e4442",
+        "type": "mqtt in",
+        "z": "d416336ea581ae7e",
+        "name": "",
+        "topic": "droneHumid",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "5b07ce00991d69ed",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 550,
+        "y": 420,
+        "wires": [
+            [
+                "53db802f09a80a25",
+                "e9a0eea1348a63f0"
+            ]
+        ]
+    },
+    {
+        "id": "e9a0eea1348a63f0",
+        "type": "ui_gauge",
+        "z": "d416336ea581ae7e",
+        "name": "",
+        "group": "d6368fbf01d60a0f",
+        "order": 1,
+        "width": 12,
+        "height": 4,
+        "gtype": "gage",
+        "title": "Humidity",
+        "label": "g/m3",
+        "format": "{{msg.payload.temp}}",
+        "min": 0,
+        "max": "100",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "33",
+        "seg2": "66",
+        "x": 800,
+        "y": 420,
+        "wires": []
     },
     {
         "id": "4c183d530da182c4",
@@ -343,31 +422,30 @@
         "name": "mysql-database",
         "host": "localhost",
         "port": "3306",
-        "db": "Drone",
+        "db": "drone",
         "tz": "",
         "charset": "UTF8"
     },
     {
-        "id": "be5ff8d263d3a60c",
+        "id": "d6368fbf01d60a0f",
         "type": "ui_group",
-        "name": "Dash board DHT22",
-        "tab": "fddeb512a5a9e440",
+        "name": "Sensor Data",
+        "tab": "0b727cb4830fae44",
         "order": 1,
         "disp": true,
-        "width": "5",
-        "collapse": false,
-        "className": ""
+        "width": "24",
+        "collapse": false
     },
     {
-        "id": "5ddb94381a74ae8d",
+        "id": "5b07ce00991d69ed",
         "type": "mqtt-broker",
         "name": "",
-        "broker": "broker.mqtt.cool",
+        "broker": "test.mosquitto.org",
         "port": "1883",
-        "clientid": "",
+        "clientid": "droneRed",
         "autoConnect": true,
         "usetls": false,
-        "protocolVersion": "4",
+        "protocolVersion": "5",
         "keepalive": "60",
         "cleansession": true,
         "autoUnsubscribe": true,
@@ -390,7 +468,7 @@
         "sessionExpiry": ""
     },
     {
-        "id": "fddeb512a5a9e440",
+        "id": "0b727cb4830fae44",
         "type": "ui_tab",
         "name": "Home",
         "icon": "dashboard",
